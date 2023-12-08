@@ -1,3 +1,5 @@
+// unfinished alternative solution to part 1
+
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -7,7 +9,6 @@
 
 const int HAND_SIZE = 5;
 const std::unordered_map<char, int> cardValues = {
-    {'J', 1},
     {'2', 2},
     {'3', 3},
     {'4', 4},
@@ -17,9 +18,27 @@ const std::unordered_map<char, int> cardValues = {
     {'8', 8},
     {'9', 9},
     {'T', 10},
-    {'Q', 11},
-    {'K', 12},
-    {'A', 13}
+    {'J', 11},
+    {'Q', 12},
+    {'K', 13},
+    {'A', 14}
+};
+
+class CamelHand {
+    public:
+        std::string cards;
+        int bet;
+
+        CamelHand(std::string c, int b) {
+            cards = c;
+            bet = b;
+        }
+
+        CamelHand operator=(const CamelHand& second) {
+            cards = second.cards;
+            bet = second.bet;
+            return *this;
+        }
 };
 
 int  countNumOfCardInHand(const std::string hand, char valToCheck);
@@ -29,52 +48,11 @@ bool containsThreeOfaKind(const std::string hand);
 bool containsFullHouse(const std::string hand);
 bool containsFourOfaKind(const std::string hand);
 bool containsFiveOfaKind(const std::string hand);
-int checkAllHands(const std::string hand);
-
-class CamelHand {
-    public:
-        std::string cards;
-        std::string cardsWithoutJokers;
-        int bet;
-
-        CamelHand(std::string c, int b) {
-            cards = c;
-            bet = b;
-
-            cardsWithoutJokers = c;
-            replaceJokers();
-        }
-
-        CamelHand operator=(const CamelHand& second) {
-            cards = second.cards;
-            bet = second.bet;
-            cardsWithoutJokers = second.cardsWithoutJokers;
-            return *this;
-        }
-
-        void replaceJokers() {
-            int highestCardCount = 0;
-            int currentCardCount;
-            char replacementChar = 'J';
-            for (auto v : cardValues) {
-                currentCardCount = countNumOfCardInHand(cards, v.first);
-                if (v.first == 'J') { continue; }
-                if (currentCardCount > highestCardCount) {
-                    highestCardCount = currentCardCount;
-                    replacementChar = v.first;
-                }
-            }
-            for (int i = 0; i < HAND_SIZE; i++) {
-                if (cardsWithoutJokers[i] == 'J') {
-                    cardsWithoutJokers[i] = replacementChar;
-                }
-            }
-        }
-};
-
+int checkAllHands(const std::vector<CamelHand*>& hands);
+void sortByHand(const std::vector<CamelHand*>& hands, int& maxPositionOffset, bool (*func)(std::string));
 
 int main() {
-    std::ifstream infile("puzzleInput.txt");
+    std::ifstream infile("puzzleinput.txt");
     std::string cards;
     bool validID = true;
     std::vector<CamelHand*> hands;
@@ -91,24 +69,12 @@ int main() {
         infile >> cards;
     }
 
-    std::sort(hands.begin(), hands.end(), 
-        [](const CamelHand* first, const CamelHand* second) {
-            int firstHand = checkAllHands(first->cardsWithoutJokers);
-            int secondHand = checkAllHands(second->cardsWithoutJokers);
-            if (firstHand < secondHand) {
-                return true;
-            } else if (firstHand == secondHand) {
-                for (int i = 0; i < HAND_SIZE; i++) {
-                    if (cardValues.at(first->cards.at(i)) < cardValues.at(second->cards.at(i))) {
-                        return true;
-                    } else if (cardValues.at(first->cards.at(i)) > cardValues.at(second->cards.at(i))) {
-                        return false;
-                    }
-                }
-            }
-
-            return false;
-        });
+    sortByHand(hands, maxPositionOffset, &containsFiveOfaKind);
+    sortByHand(hands, maxPositionOffset, &containsFourOfaKind);
+    sortByHand(hands, maxPositionOffset, &containsFullHouse);
+    sortByHand(hands, maxPositionOffset, &containsThreeOfaKind);
+    sortByHand(hands, maxPositionOffset, &containsTwoPair);
+    sortByHand(hands, maxPositionOffset, &containsPair);
 
     for (int i = 0; i < hands.size(); i++) {
         total += hands.at(i)->bet * (i + 1);
@@ -119,14 +85,13 @@ int main() {
     return 0;
 }
 
-int checkAllHands(const std::string hand) {
-    if (containsFiveOfaKind(hand)) { return 6; }
-    else if (containsFourOfaKind(hand)) { return 5; }
-    else if (containsFullHouse(hand)) { return 4; }
-    else if (containsThreeOfaKind(hand)) { return 3; }
-    else if (containsTwoPair(hand)) { return 2; }
-    else if (containsPair(hand)) { return 1; }
-    return 0;
+void sortByHand(const std::vector<CamelHand*>& hands, int& maxPositionOffset, bool (*func)(std::string)) {
+    for (std::vector<CamelHand*>::const_iterator i = hands.begin(); i != hands.end(); i++) {
+        if (func((*i)->cards)) {
+            std::iter_swap(*i, *(hands.end() - maxPositionOffset));
+            maxPositionOffset++;
+        }
+    }
 }
 
 int countNumOfCardInHand(const std::string hand, char valToCheck) {

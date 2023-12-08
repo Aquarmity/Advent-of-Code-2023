@@ -57,7 +57,7 @@ int main() {
     CamelHand* hand;
     int bet;
     int maxPositionOffset = 1;
-    int total;
+    int total = 0;
     
     infile >> cards; 
     while (infile) {
