@@ -48,7 +48,6 @@ bool containsThreeOfaKind(const std::string hand);
 bool containsFullHouse(const std::string hand);
 bool containsFourOfaKind(const std::string hand);
 bool containsFiveOfaKind(const std::string hand);
-int checkAllHands(const std::vector<CamelHand*>& hands);
 void sortByHand(const std::vector<CamelHand*>& hands, int& maxPositionOffset, bool (*func)(std::string));
 
 int main() {
