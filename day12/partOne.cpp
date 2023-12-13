@@ -7,7 +7,8 @@
 
 int placeDamagedSprings(const std::vector<int>& unknownLocations, std::string& springRow, const int damagedSprings, const std::vector<int>& substrLength);
 void recursivePlaceDamagedSprings(const std::vector<int>& unknownLocations, std::string& springRow,
-                                  const int damagedSprings, const int prevLoopStart, const std::vector<int>& substrLength, int& total);
+                                  const int damagedSprings, const int prevLoopStart,
+                                  const std::vector<int>& substrLength, int& total, const std::regex& e);
 
 int main() {
     int a = 1;
@@ -45,6 +46,7 @@ int main() {
 
         totalCombinations += placeDamagedSprings(unknownLocations, springRow, totalDamagedSprings, groupSizes);
 
+
         groupSizes.clear();
         unknownLocations.clear();
         infile >> springRow;
@@ -56,47 +58,41 @@ int main() {
 int placeDamagedSprings(const std::vector<int>& unknownLocations, std::string& springRow, const int damagedSprings, const std::vector<int>& substrLength) {
     int total = 0;
 
+    if (damagedSprings == 0) { return 1; }
+
     for (int u : unknownLocations) {
         springRow.at(u) = '.';
     }
 
+    std::string generatedExpression = "\\.*#{" + std::to_string(substrLength.at(0)) + '}';
+    for (int j = 1; j < substrLength.size(); j++) {
+        generatedExpression += "\\.+#{" + std::to_string(substrLength.at(j)) + '}';
+    }
+    std::regex e(generatedExpression);
+
     if (damagedSprings != 1) {
         for (int i = 0; i < unknownLocations.size(); i++) {
             springRow.at(unknownLocations.at(i)) = '#';
-            recursivePlaceDamagedSprings(unknownLocations, springRow, damagedSprings - 1, i, substrLength, total);
+            recursivePlaceDamagedSprings(unknownLocations, springRow, damagedSprings - 1, i, substrLength, total, e);
             springRow.at(unknownLocations.at(i)) = '.';
         }
     } else {
-        recursivePlaceDamagedSprings(unknownLocations, springRow, damagedSprings, -1, substrLength, total);
+        recursivePlaceDamagedSprings(unknownLocations, springRow, damagedSprings, -1, substrLength, total, e);
     }
     
     return total;
 }
 
 void recursivePlaceDamagedSprings(const std::vector<int>& unknownLocations, std::string& springRow,
-                                  const int damagedSprings, const int prevLoopStart, const std::vector<int>& substrLength, int& total) {
+                                  const int damagedSprings, const int prevLoopStart,
+                                  const std::vector<int>& substrLength, int& total, const std::regex& e) {
     for (int i = prevLoopStart + 1; i < unknownLocations.size(); i++) {
         springRow.at(unknownLocations.at(i)) = '#';
 
         if (damagedSprings != 1) {
-            recursivePlaceDamagedSprings(unknownLocations, springRow, damagedSprings - 1, i, substrLength, total);
+            recursivePlaceDamagedSprings(unknownLocations, springRow, damagedSprings - 1, i, substrLength, total, e);
         } else {
-            bool validArrangement = true;
-
-            for (int l : substrLength) {
-                std::string r = "#{" + std::to_string(substrLength.at(0)) + '}';
-                for (int j = 1; j < substrLength.size(); j++) {
-                    r += "\\.+#{" + std::to_string(substrLength.at(j)) + '}';
-                }
-                std::regex e(r);
-
-                if (!std::regex_search(springRow, e)) {
-                    validArrangement = false;
-                    break;
-                }
-            }
-
-            if (validArrangement) {
+            if (std::regex_search(springRow, e)) {
                 total += 1;
             }
         }
