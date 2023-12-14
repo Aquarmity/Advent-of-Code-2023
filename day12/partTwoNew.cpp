@@ -2,13 +2,10 @@
 #include <string>
 #include <fstream>
 #include <vector>
-#include <algorithm>
-#include <unordered_map>
 
 unsigned long long placeDamagedSprings(const std::string springRow, const std::vector<int>& groupSize);
-void recursivePlaceDamagedSprings(const std::string& springRow, const int groupSizeIndex, const int loopStart,
-                                  const std::vector<int>& groupSizes, unsigned long long& total,
-                                  std::vector<int>& placementIndices, int memos[200][50]);
+unsigned long long recursivePlaceDamagedSprings(const std::string& springRow, const int groupSizeIndex, const int loopStart,
+                                  const std::vector<int>& groupSizes, unsigned long long memos[200][50]);
 
 int main() {
     std::ifstream infile("puzzleInput.txt");
@@ -39,6 +36,7 @@ int main() {
                 groupSizes.push_back(gs);
             }
         }
+        
 
         combinations = placeDamagedSprings(springRow, groupSizes);
         totalCombinations += combinations;
@@ -52,74 +50,66 @@ int main() {
 }
 
 unsigned long long placeDamagedSprings(std::string springRow, const std::vector<int>& groupSizes) {
-    unsigned long long total = 0;
-    std::vector<int> placementIndices;
-
-    int memos[200][50];
+    unsigned long long memos[200][50];
     for (int i = 0; i < 200; i++) {
         for (int j = 0; j < 50; j++) {
             memos[i][j] = -1;
         }
     }
 
-    recursivePlaceDamagedSprings(springRow, 0, 0, groupSizes, total, placementIndices, memos);
-
-    return total;
+    return recursivePlaceDamagedSprings(springRow, 0, 0, groupSizes, memos);
 }
 
-void recursivePlaceDamagedSprings(const std::string& springRow, const int groupSizeIndex, const int loopStart,
-                                  const std::vector<int>& groupSizes, unsigned long long& total,
-                                  std::vector<int>& placementIndices, int memos[200][50]) {
-    #pragma omp parallel for
+unsigned long long recursivePlaceDamagedSprings(const std::string& springRow, const int groupSizeIndex, const int loopStart,
+                                                const std::vector<int>& groupSizes, unsigned long long memos[200][50]) {
+    unsigned long long subTotal = 0;
     for (int i = loopStart; i + groupSizes.at(groupSizeIndex) - 1 < springRow.length(); i++) {
+        if (memos[i][groupSizeIndex] != -1) {
+            subTotal += memos[i][groupSizeIndex];
+            continue;
+        }
+
         if (i != 0) {
             if (springRow.at(i - 1) == '#') {
                 break;
             }
         }
 
-        if (memos[i][groupSizeIndex] == -1) {
-            bool endLoop = false;
-            for (char ch : springRow.substr(i, groupSizes.at(groupSizeIndex))) {
-                if (ch == '.') {
-                    endLoop = true;
-                    break;
-                }
-            }
+        memos[i][groupSizeIndex] = 0;
 
-            if (endLoop) {
-                memos[i][groupSizeIndex] = 0;
-                continue;
+        bool endLoop = false;
+        for (char ch : springRow.substr(i, groupSizes.at(groupSizeIndex))) {
+            if (ch == '.') {
+                endLoop = true;
+                break;
             }
-            if (i + groupSizes.at(groupSizeIndex) < springRow.length()) {
-                if (springRow.at(i + groupSizes.at(groupSizeIndex)) == '#') {
-                    memos[i][groupSizeIndex] = 0;
-                    continue;
-                }
-            }
-        } else if (memos[i][groupSizeIndex] == 0) {
+        }
+        if (endLoop) {
             continue;
         }
 
-        placementIndices.push_back(i);
-        if (groupSizeIndex < groupSizes.size() - 1) {
-            recursivePlaceDamagedSprings(springRow, groupSizeIndex + 1, i + groupSizes.at(groupSizeIndex) + 1, groupSizes, total, placementIndices, memos);
-        } else {
-            /*bool validPlacement = true;
-            /*for (int j = i + groupSizes.at(groupSizeIndex) - 1; j < springRow.length(); j++) {
-                validPlacement = false;
-                if (springRow.at(j) == '#') {
-                    validPlacement = true;
-                    break;
-                }
-                validPlacement = true;
-            }*/
-            //if (validPlacement) {
-                #pragma omp critical
-                total += 1;
-            //}
+        if (i + groupSizes.at(groupSizeIndex) < springRow.length()) {
+            if (springRow.at(i + groupSizes.at(groupSizeIndex)) == '#') {
+                continue;
+            }
         }
 
-        placementIndices.pop_back();
+        if (groupSizeIndex < groupSizes.size() - 1) {
+            memos[i][groupSizeIndex] = recursivePlaceDamagedSprings(springRow, groupSizeIndex + 1, i + groupSizes.at(groupSizeIndex) + 1, groupSizes, memos);
+            subTotal += memos[i][groupSizeIndex];
+        } else {
+            bool validPlacement = true;
+            for (int j = i + groupSizes.at(groupSizeIndex); j < springRow.length(); j++) {
+                if (springRow.at(j) == '#') {
+                    validPlacement = false;
+                }
+            }
+            if (validPlacement) {
+                subTotal++;
+                memos[i][groupSizeIndex]++;
+            }
+        }
     }
+
+    return subTotal;
 }

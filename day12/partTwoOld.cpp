@@ -1,3 +1,5 @@
+// calculates wrong number
+
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -113,10 +115,3 @@ void recursivePlaceDamagedSprings(const std::vector<int>& unknownLocations, std:
         springRow.at(unknownLocations.at(i)) = '.';
     }
 }
-
-
-/********************
- Just straight up try placing a string of #s length n in a position in the string
- if no periods, do it, if not don't
-
-*/

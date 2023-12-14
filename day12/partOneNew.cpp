@@ -1,8 +1,9 @@
+// recursivePlaceDamagedSprings is cleaned up further in partTwoNew.cpp
+
 #include <iostream>
 #include <string>
 #include <fstream>
 #include <vector>
-#include <algorithm>
 
 int placeDamagedSprings(const std::string& springRow, const std::vector<int>& groupSize);
 void recursivePlaceDamagedSprings(const std::string& springRow, const int groupSizeIndex, const int loopStart,
