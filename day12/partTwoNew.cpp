@@ -5,13 +5,13 @@
 #include <algorithm>
 #include <unordered_map>
 
-unsigned long long placeDamagedSprings(std::string springRow, const std::vector<int>& groupSize);
-void recursivePlaceDamagedSprings(std::string& springRow, const int groupSizeIndex, const int loopStart,
+unsigned long long placeDamagedSprings(const std::string springRow, const std::vector<int>& groupSize);
+void recursivePlaceDamagedSprings(const std::string& springRow, const int groupSizeIndex, const int loopStart,
                                   const std::vector<int>& groupSizes, unsigned long long& total,
-                                  std::vector<int>& placementIndices, std::unordered_map<std::pair<int, int>, bool>& memos);
+                                  std::vector<int>& placementIndices, int memos[200][50]);
 
 int main() {
-    std::ifstream infile("test.txt");
+    std::ifstream infile("puzzleInput.txt");
     std::string springRow;
     unsigned long long totalCombinations = 0;
     unsigned long long combinations;
@@ -41,7 +41,7 @@ int main() {
         }
 
         combinations = placeDamagedSprings(springRow, groupSizes);
-        totalCombinations += placeDamagedSprings(springRow, groupSizes);
+        totalCombinations += combinations;
         std::cout << combinations << std::endl;
 
         groupSizes.clear();
@@ -54,24 +54,32 @@ int main() {
 unsigned long long placeDamagedSprings(std::string springRow, const std::vector<int>& groupSizes) {
     unsigned long long total = 0;
     std::vector<int> placementIndices;
-    std::unordered_map<std::pair<int, int>, bool> memos;
+
+    int memos[200][50];
+    for (int i = 0; i < 200; i++) {
+        for (int j = 0; j < 50; j++) {
+            memos[i][j] = -1;
+        }
+    }
+
     recursivePlaceDamagedSprings(springRow, 0, 0, groupSizes, total, placementIndices, memos);
+
     return total;
 }
 
-void recursivePlaceDamagedSprings(std::string& springRow, const int groupSizeIndex, const int loopStart,
+void recursivePlaceDamagedSprings(const std::string& springRow, const int groupSizeIndex, const int loopStart,
                                   const std::vector<int>& groupSizes, unsigned long long& total,
-                                  std::vector<int>& placementIndices, std::unordered_map<std::pair<int, int>, bool>& memos) {
+                                  std::vector<int>& placementIndices, int memos[200][50]) {
+    #pragma omp parallel for
     for (int i = loopStart; i + groupSizes.at(groupSizeIndex) - 1 < springRow.length(); i++) {
-        bool endLoop = false;
-
         if (i != 0) {
             if (springRow.at(i - 1) == '#') {
                 break;
             }
         }
 
-        if (memos.count(std::make_pair(loopStart, groupSizeIndex)) == 0) {
+        if (memos[i][groupSizeIndex] == -1) {
+            bool endLoop = false;
             for (char ch : springRow.substr(i, groupSizes.at(groupSizeIndex))) {
                 if (ch == '.') {
                     endLoop = true;
@@ -80,18 +88,16 @@ void recursivePlaceDamagedSprings(std::string& springRow, const int groupSizeInd
             }
 
             if (endLoop) {
-                memos.insert(std::make_pair(std::make_pair(loopStart, groupSizeIndex), false));
+                memos[i][groupSizeIndex] = 0;
                 continue;
             }
             if (i + groupSizes.at(groupSizeIndex) < springRow.length()) {
                 if (springRow.at(i + groupSizes.at(groupSizeIndex)) == '#') {
-                    memos.insert(std::make_pair(std::make_pair(loopStart, groupSizeIndex), false));
+                    memos[i][groupSizeIndex] = 0;
                     continue;
                 }
             }
-        }
-
-        if (memos.at(std::make_pair(loopStart, groupSizeIndex)) = false) {
+        } else if (memos[i][groupSizeIndex] == 0) {
             continue;
         }
 
@@ -99,26 +105,19 @@ void recursivePlaceDamagedSprings(std::string& springRow, const int groupSizeInd
         if (groupSizeIndex < groupSizes.size() - 1) {
             recursivePlaceDamagedSprings(springRow, groupSizeIndex + 1, i + groupSizes.at(groupSizeIndex) + 1, groupSizes, total, placementIndices, memos);
         } else {
-            bool validPlacement;
-            for (int j = 0; j < springRow.length(); j++) {
+            /*bool validPlacement = true;
+            /*for (int j = i + groupSizes.at(groupSizeIndex) - 1; j < springRow.length(); j++) {
                 validPlacement = false;
-                for (int k = 0; k < placementIndices.size(); k++) {
-                    if (springRow.at(j) == '#') {
-                        if (j >= placementIndices.at(k) && j < placementIndices.at(k) + groupSizes.at(k)) {
-                            validPlacement = true;
-                            break;
-                        }
-                    }
-                }
-                if (!validPlacement && springRow.at(j) == '#') {
-                    break;
-                } else {
+                if (springRow.at(j) == '#') {
                     validPlacement = true;
+                    break;
                 }
-            }
-            if (validPlacement) {
+                validPlacement = true;
+            }*/
+            //if (validPlacement) {
+                #pragma omp critical
                 total += 1;
-            }
+            //}
         }
 
         placementIndices.pop_back();

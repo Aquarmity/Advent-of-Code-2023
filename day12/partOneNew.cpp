@@ -4,8 +4,8 @@
 #include <vector>
 #include <algorithm>
 
-int placeDamagedSprings(std::string springRow, const std::vector<int>& groupSize);
-void recursivePlaceDamagedSprings(std::string& springRow, const int groupSizeIndex, const int loopStart,
+int placeDamagedSprings(const std::string& springRow, const std::vector<int>& groupSize);
+void recursivePlaceDamagedSprings(const std::string& springRow, const int groupSizeIndex, const int loopStart,
                                   const std::vector<int>& groupSizes, int& total,
                                   std::vector<int>& placementIndices);
 
@@ -38,14 +38,14 @@ int main() {
     std::cout << totalCombinations;
 }
 
-int placeDamagedSprings(std::string springRow, const std::vector<int>& groupSizes) {
+int placeDamagedSprings(const std::string& springRow, const std::vector<int>& groupSizes) {
     int total = 0;
     std::vector<int> placementIndices;
     recursivePlaceDamagedSprings(springRow, 0, 0, groupSizes, total, placementIndices);
     return total;
 }
 
-void recursivePlaceDamagedSprings(std::string& springRow, const int groupSizeIndex, const int loopStart,
+void recursivePlaceDamagedSprings(const std::string& springRow, const int groupSizeIndex, const int loopStart,
                                   const std::vector<int>& groupSizes, int& total,
                                   std::vector<int>& placementIndices) {
     for (int i = loopStart; i + groupSizes.at(groupSizeIndex) - 1 < springRow.length(); i++) {
