@@ -2,90 +2,47 @@
 #include <string>
 #include <fstream>
 #include <vector>
-#include <cmath>
+#include <algorithm>
+#include <unordered_map>
 
 unsigned long long placeDamagedSprings(std::string springRow, const std::vector<int>& groupSize);
 void recursivePlaceDamagedSprings(std::string& springRow, const int groupSizeIndex, const int loopStart,
-                                  const std::vector<int>& groupSize, unsigned long long& total);
-/*
+                                  const std::vector<int>& groupSizes, unsigned long long& total,
+                                  std::vector<int>& placementIndices, std::unordered_map<std::pair<int, int>, bool>& memos);
+
 int main() {
-    std::ifstream infile("puzzleInput.txt");
+    std::ifstream infile("test.txt");
     std::string springRow;
     unsigned long long totalCombinations = 0;
+    unsigned long long combinations;
 
     infile >> springRow;
     while (infile) {
         std::vector<int> groupSizes;
-        std::vector<int> unknownLocations;
-        int totalDamagedSprings = 0;    
         int num;
-        unsigned long long combinations = 0;
         char filler;
 
         infile >> num;
 
-        totalDamagedSprings += num;
         groupSizes.push_back(num);
         while (infile.peek() == ',') {
             infile >> filler;
             infile >> num;
-
-            totalDamagedSprings += num;
             groupSizes.push_back(num);
         }
-        
-        for (int i = 0; i < springRow.length(); i++) {
-            if (springRow.at(i) == '#') {
-                totalDamagedSprings--;
-            } else if (springRow.at(i) == '?') {
-                unknownLocations.push_back(i);
+
+        std::vector<int> originalGroupSizes = groupSizes;
+        std::string originalSpringRow = springRow;
+        for (int i = 0; i < 4; i++) {
+            springRow += '?' + originalSpringRow;
+            for (int gs : originalGroupSizes) {
+                groupSizes.push_back(gs);
             }
         }
 
-        
-        combinations = placeDamagedSprings(unknownLocations, springRow, groupSizes);
-        if (springRow.at(springRow.length() - 1) == '.') {
-            springRow = '?' + springRow;
-            for (int& u : unknownLocations) { u++; }
-            unknownLocations.push_back(0);
-            combinations *= pow(placeDamagedSprings(unknownLocations, springRow groupSizes), 4); 
-        } else {
-            unknownLocations.push_back(springRow.length());
-            springRow = springRow + '?';
-            combinations *= pow(placeDamagedSprings(unknownLocations, springRow groupSizes), 4);
-        }
-
-        totalCombinations += combinations;
-
-        groupSizes.clear();
-        unknownLocations.clear();
-        infile >> springRow;
-    }
-
-    std::cout << totalCombinations;
-}*/
-int main() {
-    std::ifstream infile("puzzleInput.txt");
-    std::string springRow;
-    int totalCombinations = 0;
-
-    infile >> springRow;
-    while (infile) {
-        std::vector<int> groupSizes;
-        int num;
-        char filler;
-
-        infile >> num;
-
-        groupSizes.push_back(num);
-        while (infile.peek() == ',') {
-            infile >> filler;
-            infile >> num;
-            groupSizes.push_back(num);
-        }
-
+        combinations = placeDamagedSprings(springRow, groupSizes);
         totalCombinations += placeDamagedSprings(springRow, groupSizes);
-        std::cout << placeDamagedSprings(springRow, groupSizes) << std::endl;
+        std::cout << combinations << std::endl;
 
         groupSizes.clear();
         infile >> springRow;
@@ -96,37 +53,74 @@ int main() {
 
 unsigned long long placeDamagedSprings(std::string springRow, const std::vector<int>& groupSizes) {
     unsigned long long total = 0;
-    recursivePlaceDamagedSprings(springRow, 0, 0, groupSizes, total);
+    std::vector<int> placementIndices;
+    std::unordered_map<std::pair<int, int>, bool> memos;
+    recursivePlaceDamagedSprings(springRow, 0, 0, groupSizes, total, placementIndices, memos);
     return total;
 }
 
 void recursivePlaceDamagedSprings(std::string& springRow, const int groupSizeIndex, const int loopStart,
-                                  const std::vector<int>& groupSizes, unsigned long long& total) {
+                                  const std::vector<int>& groupSizes, unsigned long long& total,
+                                  std::vector<int>& placementIndices, std::unordered_map<std::pair<int, int>, bool>& memos) {
     for (int i = loopStart; i + groupSizes.at(groupSizeIndex) - 1 < springRow.length(); i++) {
         bool endLoop = false;
-        for (char ch : springRow.substr(i, groupSizes.at(groupSizeIndex))) {
-            if (ch == '.') {
-                endLoop = true;
+
+        if (i != 0) {
+            if (springRow.at(i - 1) == '#') {
                 break;
             }
         }
-        if (endLoop) { continue; }
-        if (i + groupSizes.at(groupSizeIndex) < springRow.length()) {
-            if (springRow.at(i + groupSizes.at(groupSizeIndex)) == '#') {
+
+        if (memos.count(std::make_pair(loopStart, groupSizeIndex)) == 0) {
+            for (char ch : springRow.substr(i, groupSizes.at(groupSizeIndex))) {
+                if (ch == '.') {
+                    endLoop = true;
+                    break;
+                }
+            }
+
+            if (endLoop) {
+                memos.insert(std::make_pair(std::make_pair(loopStart, groupSizeIndex), false));
                 continue;
+            }
+            if (i + groupSizes.at(groupSizeIndex) < springRow.length()) {
+                if (springRow.at(i + groupSizes.at(groupSizeIndex)) == '#') {
+                    memos.insert(std::make_pair(std::make_pair(loopStart, groupSizeIndex), false));
+                    continue;
+                }
             }
         }
 
-        if (groupSizeIndex < groupSizes.size() - 1) {
-            recursivePlaceDamagedSprings(springRow, groupSizeIndex + 1, i + groupSizeIndex + 1, groupSizes, total);
-        } else {
-            total += 1;
+        if (memos.at(std::make_pair(loopStart, groupSizeIndex)) = false) {
+            continue;
         }
+
+        placementIndices.push_back(i);
+        if (groupSizeIndex < groupSizes.size() - 1) {
+            recursivePlaceDamagedSprings(springRow, groupSizeIndex + 1, i + groupSizes.at(groupSizeIndex) + 1, groupSizes, total, placementIndices, memos);
+        } else {
+            bool validPlacement;
+            for (int j = 0; j < springRow.length(); j++) {
+                validPlacement = false;
+                for (int k = 0; k < placementIndices.size(); k++) {
+                    if (springRow.at(j) == '#') {
+                        if (j >= placementIndices.at(k) && j < placementIndices.at(k) + groupSizes.at(k)) {
+                            validPlacement = true;
+                            break;
+                        }
+                    }
+                }
+                if (!validPlacement && springRow.at(j) == '#') {
+                    break;
+                } else {
+                    validPlacement = true;
+                }
+            }
+            if (validPlacement) {
+                total += 1;
+            }
+        }
+
+        placementIndices.pop_back();
     }
 }
-
-
-/********************
- Just straight up try placing a string of #s length n in a position in the string
- if no periods, do it, if not don't
-*/
