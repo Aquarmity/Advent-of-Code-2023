@@ -3,16 +3,17 @@
 #include <fstream>
 #include <vector>
 #include <regex>
+#include <cmath>
 
-int placeDamagedSprings(const std::vector<int>& unknownLocations, std::string springRow, const int damagedSprings, const std::vector<int>& groupSize);
+unsigned long long placeDamagedSprings(const std::vector<int>& unknownLocations, std::string springRow, const int damagedSprings, const std::vector<int>& groupSize);
 void recursivePlaceDamagedSprings(const std::vector<int>& unknownLocations, std::string& springRow,
                                   const int damagedSprings, const int prevLoopStart,
-                                  const std::vector<int>& groupSize, int& total, const std::regex& e);
+                                  const std::vector<int>& groupSize, unsigned long long& total, const std::regex& e);
 
 int main() {
     std::ifstream infile("puzzleInput.txt");
     std::string springRow;
-    int totalCombinations = 0;
+    unsigned long long totalCombinations = 0;
 
     infile >> springRow;
     while (infile) {
@@ -20,6 +21,7 @@ int main() {
         std::vector<int> unknownLocations;
         int totalDamagedSprings = 0;    
         int num;
+        unsigned long long combinations = 0;
         char filler;
 
         infile >> num;
@@ -33,7 +35,7 @@ int main() {
             totalDamagedSprings += num;
             groupSizes.push_back(num);
         }
-
+        
         for (int i = 0; i < springRow.length(); i++) {
             if (springRow.at(i) == '#') {
                 totalDamagedSprings--;
@@ -42,7 +44,19 @@ int main() {
             }
         }
 
-        totalCombinations += placeDamagedSprings(unknownLocations, springRow, totalDamagedSprings, groupSizes);
+        combinations = placeDamagedSprings(unknownLocations, springRow, totalDamagedSprings, groupSizes);
+        if (springRow.at(springRow.length() - 1) == '.') {
+            springRow = '?' + springRow;
+            for (int& u : unknownLocations) { u++; }
+            unknownLocations.push_back(0);
+            combinations *= pow(placeDamagedSprings(unknownLocations, springRow, totalDamagedSprings, groupSizes), 4); 
+        } else {
+            unknownLocations.push_back(springRow.length());
+            springRow = springRow + '?';
+            combinations *= pow(placeDamagedSprings(unknownLocations, springRow, totalDamagedSprings, groupSizes), 4);
+        }
+
+        totalCombinations += combinations;
 
         groupSizes.clear();
         unknownLocations.clear();
@@ -52,8 +66,8 @@ int main() {
     std::cout << totalCombinations;
 }
 
-int placeDamagedSprings(const std::vector<int>& unknownLocations, std::string springRow, const int damagedSprings, const std::vector<int>& groupSize) {
-    int total = 0;
+unsigned long long placeDamagedSprings(const std::vector<int>& unknownLocations, std::string springRow, const int damagedSprings, const std::vector<int>& groupSize) {
+    unsigned long long total = 0;
 
     if (damagedSprings == 0) {
         return 1;
@@ -84,7 +98,7 @@ int placeDamagedSprings(const std::vector<int>& unknownLocations, std::string sp
 
 void recursivePlaceDamagedSprings(const std::vector<int>& unknownLocations, std::string& springRow,
                                   const int damagedSprings, const int prevLoopStart,
-                                  const std::vector<int>& groupSize, int& total, const std::regex& e) {
+                                  const std::vector<int>& groupSize, unsigned long long& total, const std::regex& e) {
     for (int i = prevLoopStart + 1; i < unknownLocations.size(); i++) {
         springRow.at(unknownLocations.at(i)) = '#';
 
@@ -99,3 +113,10 @@ void recursivePlaceDamagedSprings(const std::vector<int>& unknownLocations, std:
         springRow.at(unknownLocations.at(i)) = '.';
     }
 }
+
+
+/********************
+ Just straight up try placing a string of #s length n in a position in the string
+ if no periods, do it, if not don't
+
+*/
