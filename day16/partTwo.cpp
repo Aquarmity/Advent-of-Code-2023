@@ -49,8 +49,6 @@ int main() {
         total = 0;
     }
 
-    
-
     for (int i = 0; i < GRID_SIZE; i++) {
         for (int j = 0; j < GRID_SIZE; j++) {
             for (int k = 0; k < GRID_SIZE; k++) {
@@ -73,8 +71,6 @@ int main() {
         }
         total = 0;
     }
-
-    
 
     for (int i = 0; i < GRID_SIZE; i++) {
         for (int j = 0; j < GRID_SIZE; j++) {
