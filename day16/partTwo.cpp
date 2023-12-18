@@ -6,11 +6,9 @@
 
 const int GRID_SIZE = 110;
 enum FacingDirection { UP, DOWN, LEFT, RIGHT, NODIRECTION };
-const FacingDirection directions[] = { UP, DOWN, LEFT, RIGHT };
 
 void traceLightPath(const char grid[GRID_SIZE][GRID_SIZE], FacingDirection visitedTiles[GRID_SIZE][GRID_SIZE], const std::pair<int, int>& startPos, FacingDirection direction);
 void stepForward(std::pair<int, int>& currentLocation, FacingDirection direction);
-int tryAllTracesFromEdge(const char grid[GRID_SIZE][GRID_SIZE], FacingDirection visitedTiles[GRID_SIZE][GRID_SIZE], FacingDirection direction);
 
 int main() {
     std::ifstream infile("puzzleInput.txt");
