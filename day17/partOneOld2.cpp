@@ -13,7 +13,7 @@ typedef std::tuple<int, int, int, FacingDirection> quadruple;
 struct Block {
     int heatLoss;
     int tempHeatLoss;
-    unsigned int heatLossFromStart;
+    int heatLossFromStart;
     std::pair<int, int> prevBlock;
     bool visited;
     FacingDirection direction;
@@ -21,15 +21,26 @@ struct Block {
     Block() {
         heatLoss = 0;
         tempHeatLoss = 0;
-        heatLossFromStart = -1;
+        heatLossFromStart = INT_MAX;
         prevBlock = std::make_pair(-1, -1);
         visited = false;
         direction = NODIRECTION;
     }
+
+    Block operator=(const Block& second) {
+        heatLoss = second.heatLoss;
+        tempHeatLoss = second.tempHeatLoss;
+        heatLossFromStart = second.heatLossFromStart;
+        prevBlock = second.prevBlock;
+        visited = second.visited;
+        direction = second.direction;
+
+        return *this;
+    }
 };
 
 unsigned int shortestPath(Block map[GRID_SIZE][GRID_SIZE]);
-void enqueueNearbyBlocks(const Block map[GRID_SIZE][GRID_SIZE], std::priority_queue<quadruple, std::vector<quadruple>, std::greater<quadruple>>& blocksToVisit,
+void enqueueNearbyBlocks(const Block amap[GRID_SIZE][GRID_SIZE], std::priority_queue<quadruple, std::vector<quadruple>, std::greater<quadruple>>& blocksToVisit,
                          const std::pair<int, int>& pos, const FacingDirection direction);
 
 int main() {
@@ -49,13 +60,19 @@ int main() {
     return 0;
 }
 
-unsigned int shortestPath(Block map[GRID_SIZE][GRID_SIZE]) {
+unsigned int shortestPath(Block amap[GRID_SIZE][GRID_SIZE]) {
     std::priority_queue<quadruple, std::vector<quadruple>, std::greater<quadruple>> blocksToVisit;
     std::pair<int, int> curPos(0, 0);
     FacingDirection direction = NODIRECTION;
+    Block map[GRID_SIZE][GRID_SIZE];
 
+    for (int i = 0; i < GRID_SIZE; i++) {
+        for (int j = 0; j < GRID_SIZE; j++) {
+            blocksToVisit.push(std::make_tuple(map[i][j].heatLossFromStart, i, j, map[i][j].direction));
+            map[i][j] = amap[i][j];
+        }
+    }
     map[0][0].heatLossFromStart = 0;
-    blocksToVisit.push(std::make_tuple(map[curPos.first][curPos.second].heatLoss, curPos.first, curPos.second, direction));
 
     while (!blocksToVisit.empty()) {
         quadruple currentBlock(blocksToVisit.top());
@@ -64,7 +81,6 @@ unsigned int shortestPath(Block map[GRID_SIZE][GRID_SIZE]) {
 
         if (!map[curPos.first][curPos.second].visited) {
             std::priority_queue<quadruple, std::vector<quadruple>, std::greater<quadruple>> adjacentBlocks;
-            map[curPos.first][curPos.second].tempHeatLoss = std::get<0>(currentBlock);
             map[curPos.first][curPos.second].direction = std::get<3>(currentBlock);
             map[curPos.first][curPos.second].visited = true;
 
@@ -78,10 +94,10 @@ unsigned int shortestPath(Block map[GRID_SIZE][GRID_SIZE]) {
                 if (map[adjPos.first][adjPos.second].heatLossFromStart > map[curPos.first][curPos.second].heatLossFromStart + map[adjPos.first][adjPos.second].tempHeatLoss) {
                     map[adjPos.first][adjPos.second].heatLossFromStart = map[curPos.first][curPos.second].heatLossFromStart + map[adjPos.first][adjPos.second].tempHeatLoss;
                     map[adjPos.first][adjPos.second].prevBlock = std::make_pair(curPos.first, curPos.second);
+                    map[adjPos.first][adjPos.second].direction = std::get<3>(adjBlock);
+                    blocksToVisit.push(std::make_tuple(map[adjPos.first][adjPos.second].heatLossFromStart, adjPos.first, adjPos.second, map[adjPos.first][adjPos.second].direction));
                 }
             }
-
-            enqueueNearbyBlocks(map, blocksToVisit, curPos, map[curPos.first][curPos.second].direction);
         }
 
         /*if (curPos == std::make_pair(GRID_SIZE - 1, GRID_SIZE - 1)) {
